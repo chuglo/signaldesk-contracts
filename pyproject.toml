@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "signaldesk-contracts"
 version = "0.2.0"
-description = "SignalDesk contracts skeleton"
+description = "SignalDesk event contracts"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = ["pydantic>=2.11,<3"]
