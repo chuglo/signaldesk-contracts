@@ -1,6 +1,8 @@
 """Strict, versioned event contracts shared by SignalDesk services."""
 
+from collections.abc import Mapping
 from datetime import datetime
+from types import MappingProxyType
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -40,6 +42,14 @@ class DiagnosticCompletedV1(_EventBase):
     diagnostic_job_id: UUID
 
 
+class DiagnosticTerminalV2(_EventBase):
+    """A notice that an authoritative diagnostic job reached a terminal status."""
+
+    event_type: Literal["diagnostic.terminal.v2"]
+    diagnostic_job_id: UUID
+    status: Literal["completed", "failed"]
+
+
 class EmailRequestedV1(_EventBase):
     """A request to process an authoritative email delivery."""
 
@@ -61,14 +71,36 @@ class ExportCompletedV1(_EventBase):
     export_job_id: UUID
 
 
+class NotificationRequestedV1(_EventBase):
+    """A request to process an authoritative notification."""
+
+    event_type: Literal["notification.requested.v1"]
+    notification_id: UUID
+
+
 Event = Annotated[
     DiagnosticRequestedV1
     | DiagnosticCompletedV1
+    | DiagnosticTerminalV2
     | EmailRequestedV1
     | ExportRequestedV1
-    | ExportCompletedV1,
+    | ExportCompletedV1
+    | NotificationRequestedV1,
     Field(discriminator="event_type"),
 ]
+
+REDIS_STREAM_BY_EVENT_TYPE: Mapping[str, str] = MappingProxyType(
+    {
+        "diagnostic.requested.v1": "signaldesk:diagnostics",
+        "diagnostic.completed.v1": "signaldesk:diagnostic-completions",
+        "diagnostic.terminal.v2": "signaldesk:diagnostic-terminals",
+        "email.requested.v1": "signaldesk:emails",
+        "export.requested.v1": "signaldesk:exports",
+        "export.completed.v1": "signaldesk:export-completions",
+        "notification.requested.v1": "signaldesk:notifications",
+    }
+)
+"""Read-only Redis stream name for each supported versioned event type."""
 
 _EVENT_ADAPTER = TypeAdapter(Event)
 
